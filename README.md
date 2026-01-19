@@ -31,6 +31,21 @@ npm run start
 The application renders a **single demo page** showing Prototype 3.
 
 ---
+## Live site / Deployment
+
+This prototype is deployed using **Cloudflare Pages** and is publicly accessible at:
+
+https://repo-demodaterange.pages.dev/
+
+### Deployment behavior
+
+- The site is automatically deployed on every push to the `main` branch
+- No manual deployment steps are required
+- The build is generated using the production configuration
+
+This setup allows reviewers, QA, and developers to always access the latest version of the prototype without running it locally.
+
+---
 
 ## High-level architecture
 
