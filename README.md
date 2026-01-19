@@ -1,14 +1,25 @@
-# Angular 19 - Date Range Picker (Prototype 3)
+# Angular 19 – Date Range Picker (Prototype 3)
 
-This repository contains a **dependency-free** Date Range Picker built with **Angular 19** (standalone components) and plain **TypeScript/CSS**.  
-It was extracted from a multi-prototype playground and kept as a single, production-oriented component.
+This repository contains **Prototype 3** of a dependency-free Date Range Picker built with **Angular 19** using **standalone components**, **signals**, and **plain TypeScript/CSS**.
 
-- No Angular Material
-- No third-party date libraries (Moment, Day.js, date-fns, ...)
-- Presets + Custom date range selection
-- Two-month dependent calendar view
-- Future dates disabled (today is allowed)
-- Responsive layout (horizontal when space allows, vertical on narrow screens)
+The goal of this prototype is to provide a **production-ready reference implementation** that can be:
+- Integrated into an existing Angular application
+- Reviewed by developers and QA
+- Used as a baseline for future visual or behavioral changes
+
+No third‑party UI or date libraries are used.
+
+---
+
+## Goals and scope
+
+- Provide a robust date range selection UX
+- Support both **presets** and **custom ranges**
+- Enforce **no-future-date** rules
+- Keep logic decoupled from UI
+- Remain framework‑light and easy to reason about
+
+---
 
 ## Quickstart
 
@@ -17,144 +28,270 @@ npm install
 npm run start
 ```
 
-Open the app and navigate to the single demo page.
+The application renders a **single demo page** showing Prototype 3.
+
+---
+
+## High-level architecture
+
+```
+Demo page
+   ↓
+DateRangePickerComponent
+   ↓
+Pure date utilities & preset logic
+```
+
+- **UI logic** lives in the picker component
+- **Date math & rules** live in reusable helpers
+- **No DOM logic** exists outside the component
+
+---
 
 ## Folder structure
 
 ```
 src/app/
-  date-range/
-    date-range.types.ts     # Shared types (DateRange, QuickKey, ...)
-    date-utils.ts           # Pure date helpers (grid building, normalize, etc.)
-    presets.ts              # Preset definitions and range calculators
-
-  date-range-picker/
-    date-range-picker.component.ts  # Standalone picker component (UI + interaction)
-
-  demo/
-    demo.component.ts       # Simple demo page for manual testing
-
-  app.component.ts          # Renders the demo component
+├── date-range/
+│   ├── date-range.types.ts
+│   │   Shared interfaces and enums (DateRange, Preset keys)
+│   │
+│   ├── date-utils.ts
+│   │   Pure date helpers:
+│   │   - date normalization
+│   │   - month grid generation
+│   │   - comparisons (same day, range checks)
+│   │
+│   └── presets.ts
+│       Preset definitions and calculations
+│
+├── date-range-picker/
+│   ├── date-range-picker.component.ts
+│   │   Core behavior:
+│   │   - state management (signals)
+│   │   - calendar navigation rules
+│   │   - validation logic
+│   │   - preset vs custom flows
+│   │
+│   ├── date-range-picker.component.html
+│   │   Template:
+│   │   - inputs
+│   │   - dropdowns
+│   │   - calendars
+│   │   - buttons
+│   │
+│   └── date-range-picker.component.css
+│       Styles:
+│       - layout
+│       - spacing
+│       - responsive behavior
+│
+├── demo/
+│   └── demo.component.ts
+│       Minimal demo wrapper
+│
+└── app.component.ts
+    Renders the demo
 ```
 
-## Component API
+---
 
-Selector:
+## Component responsibilities
 
-```html
-<app-date-range-picker
-  [value]="range"
-  (valueChange)="range = $event"
-></app-date-range-picker>
-```
+### date-range-picker.component.ts
 
-Types:
+Responsible for:
+- Applied vs draft range handling
+- Preset detection and application
+- Calendar navigation (month/year)
+- Preventing future selections
+- Validation rules
+- Responsive behavior triggers
 
-```ts
-export type DateRange = { start: Date | null; end: Date | null };
-```
+No HTML or styling logic exists here.
 
-### Events
-- `valueChange: EventEmitter<DateRange>` emits **only** when the user clicks **Apply dates**.
+---
 
-## Data contract for backend filtering
+### date-range-picker.component.html
 
-UI can display friendly strings, but backend filtering should use a stable format. Recommended patterns:
+Responsible for:
+- Rendering inputs and dropdowns
+- Binding to signals
+- Displaying validation messages
+- Wiring user interactions
 
-### Date-only filtering (no time)
-Send ISO dates:
+No date calculations exist here.
 
-```json
-{ "startDate": "2025-01-12", "endDate": "2025-03-28" }
-```
+---
 
-### Timestamp filtering (with time)
-Send ISO timestamps in UTC (example):
+### date-range-picker.component.css
 
-```json
-{ "startDateTime": "2025-01-12T00:00:00Z", "endDateTime": "2025-03-28T23:59:59Z" }
-```
+Responsible for:
+- Horizontal vs vertical layout
+- Compact spacing
+- Visual affordances (hover, selected, disabled)
+- Breakpoints for responsiveness
 
-## QA guide (expected behavior)
+---
 
-The following scenarios describe the intended behavior of the picker using a Gherkin-style format.
+## Core behavioral rules
 
-### Feature: Presets
+### Presets
+
+- Selecting a preset:
+  - Immediately updates the applied range
+  - Closes any open calendar
+- Presets never keep the calendar open
+- Presets are recalculated relative to **today**
+
+---
+
+### Custom range – opening behavior
+
+- Clicking **Custom** opens the calendar panel
+- If coming from a preset:
+  - Draft is empty
+  - Calendar opens in a fresh state (previous + current month)
+- If editing an existing custom range:
+  - Draft is prefilled
+  - Calendars reposition to show the relevant months
+
+---
+
+### Calendar navigation rules
+
+#### Month navigation
+
+- Two calendars always show **consecutive months**
+- The bottom calendar may not move beyond the current month
+- The top calendar may not advance if it would push the bottom calendar into the future
+
+#### Year selection
+
+- Only years **≤ current year** are shown
+- A year option is disabled if selecting it would create a future month
+- Year selection never visually succeeds if logically invalid
+
+---
+
+### Date selection rules
+
+- Future dates are disabled
+- Today is allowed
+- Selection flow:
+  1. First click sets Start
+  2. Second click sets End
+  3. Clicking again edits based on the active field (Start or End)
+
+---
+
+### Validation rules
+
+- Start and End validations are **independent**
+- Clearing the draft shows validation messages
+- Selecting only Start clears only the Start error
+- Errors clear only when both dates are valid
+- Canceling the panel does **not** apply changes
+
+---
+
+## Responsive behavior
+
+- When enough horizontal space exists:
+  - Calendars render side-by-side
+- On smaller widths:
+  - Calendars stack vertically
+- Inputs attempt to remain on one row when possible
+
+Layout decisions are CSS-only.
+
+---
+
+## QA scenarios (Gherkin)
+
+### Presets
 
 ```gherkin
-Feature: Date Range Presets
-
-  Scenario: Default preset is applied when the demo loads
-    Given the demo page is loaded
-    When no external value is injected
-    Then the current selection should be Last 90 days
-
-  Scenario: Selecting a preset updates the selection immediately
-    Given the presets dropdown is open
-    When the user clicks "Last 7 days"
-    Then the current selection should represent the last 7 days ending today
-    And the calendar panel should remain closed
+Scenario: Default preset is applied
+  Given the page loads
+  Then the selected range is Last 90 days
 ```
-
-### Feature: Custom range
 
 ```gherkin
-Feature: Custom Date Range
-
-  Scenario: Opening Custom shows the calendar panel
-    Given the presets dropdown is open
-    When the user clicks "Custom"
-    Then the calendar panel should be visible
-
-  Scenario: Applying a custom range updates the selection
-    Given the calendar panel is open
-    When the user selects a start date and an end date
-    And the user clicks "Apply dates"
-    Then the selection should update to the chosen range
-    And the calendar panel should close
-
-  Scenario: Canceling Custom does not change the applied selection
-    Given a selection is already applied
-    And the calendar panel is open
-    When the user dismisses the panel without clicking "Apply dates"
-    Then the selection should remain the previously applied range
+Scenario: Preset applies immediately
+  When the user selects "Last 7 days"
+  Then the range updates immediately
+  And the calendar is closed
 ```
 
-### Feature: Date constraints
+---
+
+### Custom range
 
 ```gherkin
-Feature: Date Constraints
-
-  Scenario: Future dates are disabled
-    Given the calendar panel is open
-    When the user tries to select a date after today
-    Then the picker should prevent the selection
-
-  Scenario: Today is allowed
-    Given the calendar panel is open
-    When the user selects today's date
-    Then the picker should accept the selection
+Scenario: Open custom picker
+  When the user clicks Custom
+  Then the calendar panel opens
 ```
-
-### Feature: Responsive layout
 
 ```gherkin
-Feature: Responsive Layout
-
-  Scenario: Desktop layout shows two calendars side-by-side when there is enough width
-    Given the viewport width is wide enough
-    When the calendar panel opens
-    Then the two month calendars should render horizontally
-
-  Scenario: Narrow layout stacks calendars vertically
-    Given the viewport width is narrow
-    When the calendar panel opens
-    Then the two month calendars should render one above the other
+Scenario: Independent field validation
+  Given the panel is open
+  When the user clears dates
+  Then both Start and End errors are shown
+  When the user selects a Start date
+  Then only the End error remains
 ```
 
-## Notes for developers
+```gherkin
+Scenario: Apply custom range
+  Given both Start and End are selected
+  When the user clicks Apply
+  Then the range updates
+  And the panel closes
+```
 
-- **Pure date logic** lives in `src/app/date-range/date-utils.ts` and `src/app/date-range/presets.ts`.
-- The picker component is intentionally standalone so it can be copied into another app or extracted into an internal library.
-- Styling is plain CSS kept inside the component to reduce global coupling.
+---
 
+### Date constraints
+
+```gherkin
+Scenario: Prevent future dates
+  When the user attempts to select a future date
+  Then the date cannot be selected
+```
+
+```gherkin
+Scenario: Prevent future year navigation
+  When the user selects a year that would create a future month
+  Then the year option is disabled
+```
+
+---
+
+## Modifying the visual design
+
+To change the visual appearance:
+
+- **Spacing, layout, breakpoints**
+  - Edit `date-range-picker.component.css`
+- **Markup structure**
+  - Edit `date-range-picker.component.html`
+- **Behavioral rules**
+  - Edit `date-range-picker.component.ts`
+
+Recommended:
+- Do **not** mix date logic into HTML
+- Do **not** introduce visual conditionals into TS
+- Keep date math inside `date-utils.ts`
+
+---
+
+## Integration notes
+
+- The component is standalone
+- Can be copied into another Angular 19+ app
+- No external dependencies required
+- Works with OnPush change detection by default
+
+---
