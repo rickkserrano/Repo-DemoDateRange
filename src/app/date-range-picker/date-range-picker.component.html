@@ -1,0 +1,216 @@
+
+    <div class="drp3">
+      <div class="field">
+        <div class="fieldLabel">Date range</div>
+
+        <div class="selectWrap" [class.invalid]="dateRangeInvalid()">
+          <button
+            type="button"
+            class="selectTrigger"
+            (click)="toggleMenu()"
+            [attr.aria-expanded]="isMenuOpen()"
+          >
+            <span class="triggerText">{{ triggerLabel() }}</span>
+            <span class="caret" aria-hidden="true">▾</span>
+          </button>
+
+          <div class="menu" *ngIf="isMenuOpen()">
+            <button
+              type="button"
+              class="menuItem"
+              (mousedown)="onCustomMouseDown($event)"
+              (click)="openCustomFromMenu()"
+            >
+              Custom
+            </button>
+
+            <button
+              *ngFor="let p of presets"
+              type="button"
+              class="menuItem"
+              [class.selected]="activePresetKey() === p.key"
+              (click)="applyPreset(p.key)"
+            >
+              {{ p.label }}
+            </button>
+          </div>
+        </div>
+
+        <div class="fieldError" *ngIf="dateRangeMessage()">
+          {{ dateRangeMessage() }}
+        </div>
+      </div>
+
+      <div class="panel" *ngIf="isOpen()">
+        <div class="panelTop">
+          <div class="inputs">
+            <div class="field">
+              <div class="fieldLabel">Start date</div>
+              <input
+                readonly
+                [class.active]="activeField() === 'start'"
+                [class.invalid]="showError() && !draft().start"
+                [value]="draft().start ? (draft().start | date:'MM/dd/yyyy') : ''"
+                placeholder="MM/DD/YYYY"
+                (click)="setActive('start')"
+              />
+              <div class="fieldError" *ngIf="showError() && !draft().start">
+                Please select a start date.
+              </div>
+            </div>
+
+            <div class="field">
+              <div class="fieldLabel">End date</div>
+              <input
+                readonly
+                [class.active]="activeField() === 'end'"
+                [class.invalid]="showError() && !draft().end"
+                [value]="draft().end ? (draft().end | date:'MM/dd/yyyy') : ''"
+                placeholder="MM/DD/YYYY"
+                (click)="setActive('end')"
+              />
+              <div class="fieldError" *ngIf="showError() && !draft().end">
+                Please select an end date.
+              </div>
+            </div>
+          </div>
+
+          <div class="generalError" *ngIf="showError() && (!draft().start || !draft().end)">
+            <ng-container *ngIf="!draft().start && !draft().end">
+              Please select a start and end date.
+            </ng-container>
+          </div>
+        </div>
+
+        <div class="calStack">
+          <div class="cal">
+            <div class="calHeader">
+              <button class="iconBtn" type="button" (click)="prevMonth('top')" aria-label="Previous month">←</button>
+
+              <div class="headerCenter">
+                <select class="select" [ngModel]="topMonthIndex()" (ngModelChange)="setMonthIndex('top', $event)">
+                  <option
+                    *ngFor="let m of months; let i=index"
+                    [ngValue]="i"
+                    [disabled]="isFutureMonth('top', i, topYearValue())"
+                  >
+                    {{ m }}
+                  </option>
+                </select>
+
+                <select class="select" [ngModel]="topYearValue()" (ngModelChange)="setYearValue('top', $event)">
+                  <option *ngFor="let y of topYearsLimited()" [ngValue]="y" [disabled]="y > todayYear">
+                    {{ y }}
+                  </option>
+                </select>
+              </div>
+
+              <button
+                class="iconBtn"
+                type="button"
+                (click)="nextMonth('top')"
+                [disabled]="!canGoNext('top')"
+                aria-label="Next month"
+              >→</button>
+            </div>
+
+            <div class="calMonthLabel">{{ label(topMonth()) }}</div>
+
+            <div class="dow">
+              <div class="dowCell" *ngFor="let d of dow">{{ d }}</div>
+            </div>
+
+            <div class="grid">
+              <ng-container *ngFor="let cell of topGrid()">
+                <div *ngIf="cell === null" class="cell empty"></div>
+                <button
+                  *ngIf="cell !== null"
+                  type="button"
+                  class="cell"
+                  [class.inRange]="inRange(cell)"
+                  [class.start]="isStart(cell)"
+                  [class.end]="isEnd(cell)"
+                  [class.disabledCell]="isCellDisabled(cell)"
+                  [disabled]="isCellDisabled(cell)"
+                  (click)="pickDate(cell)"
+                >
+                  {{ cell.getDate() }}
+                </button>
+              </ng-container>
+            </div>
+          </div>
+
+          <div class="cal">
+            <div class="calHeader">
+              <button class="iconBtn" type="button" (click)="prevMonth('bottom')" aria-label="Previous month">←</button>
+
+              <div class="headerCenter">
+                <select class="select" [ngModel]="bottomMonthIndex()" (ngModelChange)="setMonthIndex('bottom', $event)">
+                  <option
+                    *ngFor="let m of months; let i=index"
+                    [ngValue]="i"
+                    [disabled]="isFutureMonth('bottom', i, bottomYearValue())"
+                  >
+                    {{ m }}
+                  </option>
+                </select>
+
+                <select class="select" [ngModel]="bottomYearValue()" (ngModelChange)="setYearValue('bottom', $event)">
+                  <option *ngFor="let y of bottomYearsLimited()" [ngValue]="y" [disabled]="y > todayYear">
+                    {{ y }}
+                  </option>
+                </select>
+              </div>
+
+              <button
+                class="iconBtn"
+                type="button"
+                (click)="nextMonth('bottom')"
+                [disabled]="!canGoNext('bottom')"
+                aria-label="Next month"
+              >→</button>
+            </div>
+
+            <div class="calMonthLabel">{{ label(bottomMonth()) }}</div>
+
+            <div class="dow">
+              <div class="dowCell" *ngFor="let d of dow">{{ d }}</div>
+            </div>
+
+            <div class="grid">
+              <ng-container *ngFor="let cell of bottomGrid()">
+                <div *ngIf="cell === null" class="cell empty"></div>
+                <button
+                  *ngIf="cell !== null"
+                  type="button"
+                  class="cell"
+                  [class.inRange]="inRange(cell)"
+                  [class.start]="isStart(cell)"
+                  [class.end]="isEnd(cell)"
+                  [class.disabledCell]="isCellDisabled(cell)"
+                  [disabled]="isCellDisabled(cell)"
+                  (click)="pickDate(cell)"
+                >
+                  {{ cell.getDate() }}
+                </button>
+              </ng-container>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer">
+          <button class="btn ghost" type="button" (click)="clearDraft()">Clear dates</button>
+
+          <button
+            class="btn"
+            type="button"
+            (click)="apply()"
+            [disabled]="!canApply()"
+            [class.disabledBtn]="!canApply()"
+          >
+            Apply dates
+          </button>
+        </div>
+      </div>
+    </div>
+  
