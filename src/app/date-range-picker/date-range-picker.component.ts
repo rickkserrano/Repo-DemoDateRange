@@ -217,35 +217,89 @@ export class DateRangePickerComponent {
   }
 
   /**
-   * If an existing range cannot fit within two consecutive visible months,
-   * re-anchor the calendars depending on which input is being edited.
+   * Re-center the 2-calendar window so the active field's month becomes visible.
    *
-   * - Editing start: show start month on top, next month on bottom
-   * - Editing end: show end month on bottom, previous month on top
+   * This must work even when the current visible months are "desynced" because the user
+   * navigated around without changing the selected range.
+   *
+   * Rules:
+   * - If the active field is Start:
+   *   - If Start is in the current month: show (prev month) on top and (current month) on bottom.
+   *   - Else if the range spans 2 consecutive months: show start month on top, end month on bottom.
+   *   - Else: show start month on top and its next month on bottom.
+   * - If the active field is End:
+   *   - If End is in the current month: show (prev month) on top and (current month) on bottom.
+   *   - Else if the range spans 2 consecutive months: show start month on top, end month on bottom.
+   *   - Else: show (prev month of end) on top and (end month) on bottom.
+   *
+   * Note: "current month" means the component's 'today' value, not the system clock.
    */
-  private jumpCalendarsIfNeeded(target: 'start' | 'end') {
-    if (!this.isOpen()) return; // only when panel is open
+  private recenterCalendarsForActiveField(target: 'start' | 'end') {
+    if (!this.isOpen()) return;
 
     const { start, end } = this.draft();
-    if (!start || !end) return; // only when we have an existing full range
+    if (!start && !end) return;
 
-    const s = normalizeDate(start);
-    const e = this.clampToToday(end);
+    const s = start ? normalizeDate(start) : null;
+    const e = end ? this.clampToToday(end) : null;
 
-    const diffMonths = this.monthIndex(e) - this.monthIndex(s);
+    const todayMonthStart = startOfMonth(this.today);
 
-    // If range fits within two consecutive months, do nothing.
-    if (diffMonths < 2) return;
+    const isCurrentMonth = (d: Date) =>
+      d.getFullYear() === this.today.getFullYear() && d.getMonth() === this.todayMonth;
 
-    if (target === 'start') {
-      const top = startOfMonth(s);
-      this.topMonth.set(top);
-      this.bottomMonth.set(startOfMonth(addMonths(top, 1)));
+    // When both dates exist, we can decide if the range fits in two visible months.
+    const diffMonths =
+      s && e ? Math.abs(this.monthIndex(e) - this.monthIndex(s)) : null;
+
+    let top: Date;
+    let bottom: Date;
+
+    if (target === 'start' && s) {
+      if (isCurrentMonth(s)) {
+        // Can't show future months: current month must be on the bottom calendar.
+        bottom = todayMonthStart;
+        top = startOfMonth(addMonths(bottom, -1));
+      } else if (diffMonths !== null && diffMonths <= 1 && e) {
+        // Range fits across 1 or 2 consecutive months.
+        // IMPORTANT: if BOTH dates are in the SAME month (diffMonths === 0), we still want to
+        // show two *consecutive* months (month-of-range on top, next month on bottom).
+        // Otherwise the UI shows duplicate months in both calendars.
+        top = startOfMonth(s);
+        bottom = diffMonths === 0 ? startOfMonth(addMonths(top, 1)) : startOfMonth(e);
+      } else {
+        top = startOfMonth(s);
+        bottom = startOfMonth(addMonths(top, 1));
+      }
+    } else if (target === 'end' && e) {
+      if (isCurrentMonth(e)) {
+        bottom = todayMonthStart;
+        top = startOfMonth(addMonths(bottom, -1));
+      } else if (diffMonths !== null && diffMonths <= 1 && s) {
+        // Same rule as above: if the range is within a single month, keep two consecutive months
+        // (range month on top + next month) instead of duplicating the same month twice.
+        top = startOfMonth(s);
+        bottom = diffMonths === 0 ? startOfMonth(addMonths(top, 1)) : startOfMonth(e);
+      } else {
+        bottom = startOfMonth(e);
+        top = startOfMonth(addMonths(bottom, -1));
+      }
     } else {
-      const bottom = startOfMonth(e);
-      this.bottomMonth.set(bottom);
-      this.topMonth.set(startOfMonth(addMonths(bottom, -1)));
+      // Partial range: fall back to keeping the current window.
+      return;
     }
+
+    // Safety: never allow bottom to be after 'today'. If it is, clamp to current month.
+    const bottomIsFuture =
+      bottom.getFullYear() > this.today.getFullYear() ||
+      (bottom.getFullYear() === this.today.getFullYear() && bottom.getMonth() > this.todayMonth);
+    if (bottomIsFuture) {
+      bottom = todayMonthStart;
+      top = startOfMonth(addMonths(bottom, -1));
+    }
+
+    this.topMonth.set(top);
+    this.bottomMonth.set(bottom);
   }
 
   /** Toggle preset dropdown (disabled while panel is open) */
@@ -355,8 +409,16 @@ export class DateRangePickerComponent {
    * When editing an existing long range, we jump calendars so the focused date is visible.
    */
   setActive(which: 'start' | 'end') {
+    this.setActiveInternal(which, { recenter: true });
+  }
+
+  /**
+   * Same as setActive(...), but allows callers (e.g., "auto swap" UX)
+   * to switch the active field without jumping the calendar view.
+   */
+  private setActiveInternal(which: 'start' | 'end', opts: { recenter: boolean }) {
     this.activeField.set(which);
-    this.jumpCalendarsIfNeeded(which);
+    if (opts.recenter) this.recenterCalendarsForActiveField(which);
   }
 
   /**
@@ -527,6 +589,7 @@ export class DateRangePickerComponent {
     const cur = this.draft();
     const start = cur.start ? normalizeDate(cur.start) : null;
     const end = cur.end ? normalizeDate(cur.end) : null;
+    const active = this.activeField();
 
     if (!start) {
       this.draft.set({ start: clicked, end: null });
@@ -547,19 +610,23 @@ export class DateRangePickerComponent {
 
     // Both exist: edit based on active field.
     if (start && end) {
-      if (this.activeField() === 'start') {
+      if (active === 'start') {
         if (clicked.getTime() > end.getTime()) {
           this.draft.set({ start, end: clicked });
+          // If user picked a date after the existing End, we treat this as updating End.
           this.activeField.set('end');
         } else {
           this.draft.set({ start: clicked, end });
+
         }
       } else {
         if (clicked.getTime() < start.getTime()) {
           this.draft.set({ start: clicked, end });
+          // If user picked a date before the existing Start, we treat this as updating Start.
           this.activeField.set('start');
         } else {
           this.draft.set({ start, end: clicked });
+
         }
       }
       this.updateValidationAfterDraftChange();
