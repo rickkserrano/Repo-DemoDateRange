@@ -95,10 +95,11 @@ export class DateRangePickerComponent {
 
   /**
    * Year lists for each calendar.
+   * UX rule: only show years up to the current year.
+   * Even if future years are disabled, displaying them adds visual noise.
    *
-   * IMPORTANT UX:
-   * Even if future years are disabled, showing them adds visual noise.
-   * So we *do not show* any year beyond the current year.
+   * NOTE: We do NOT only disable "y > todayYear".
+   * We must also disable selecting a year that would make the currently selected month a future month.
    */
   topYearsLimited = computed(() =>
     yearOptions(this.topMonth().getFullYear(), 6).filter((y) => y <= this.todayYear)
@@ -313,13 +314,28 @@ export class DateRangePickerComponent {
         end: normalizeDate(applied.end),
       });
 
-      this.activeField.set('end');
+      /**
+       * UX rule: when editing an existing custom range, default focus is Start.
+       * This makes the initial calendar anchoring predictable and avoids
+       * opening the panel centered on End by default.
+       */
+      this.activeField.set('start');
       this.showError.set(false);
 
-      const anchor = normalizeDate(applied.end);
-      const clamped = anchor.getTime() > this.today.getTime() ? this.today : anchor;
-      this.bottomMonth.set(startOfMonth(clamped));
-      this.topMonth.set(startOfMonth(addMonths(this.bottomMonth(), -1)));
+      const start = normalizeDate(applied.start);
+
+      // If Start is in the current month, show (prev month) + (current month).
+      // Otherwise show (start month) + (next month).
+      const currentMonthStart = startOfMonth(this.today);
+      const startMonthStart = startOfMonth(start);
+
+      if (startMonthStart.getTime() === currentMonthStart.getTime()) {
+        this.bottomMonth.set(currentMonthStart);
+        this.topMonth.set(startOfMonth(addMonths(currentMonthStart, -1)));
+      } else {
+        this.topMonth.set(startMonthStart);
+        this.bottomMonth.set(startOfMonth(addMonths(startMonthStart, 1)));
+      }
 
       this.isOpen.set(true);
       return;
