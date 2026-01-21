@@ -1,5 +1,5 @@
 import { addDays, normalizeDate } from './date-utils';
-import { DateRange, QuickKey } from './date-range.types';
+import { DateRange, QuickKey, AppliedDateRange  } from './date-range.types';
 
 /**
  * Default selection when no value is provided.
@@ -17,7 +17,7 @@ export const PRESETS: ReadonlyArray<{ key: QuickKey; label: string }> = [
 ];
 
 /** Calculate date range for a given preset key. */
-export function calcPresetRange(key: QuickKey, today: Date): DateRange {
+export function calcPresetRange(key: QuickKey, today: Date): AppliedDateRange  {
   const t = normalizeDate(today);
 
   if (key === 'today') return { start: t, end: t };

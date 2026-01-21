@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DateRangePickerProto4Component } from '../date-range-picker-proto4/date-range-picker-proto4.component';
 
 import { DateRangePickerComponent } from '../date-range-picker/date-range-picker.component';
 import { DateRange } from '../date-range/date-range.types';
@@ -13,7 +14,7 @@ function lastNDays(n: number): DateRange {
 @Component({
   selector: 'app-demo',
   standalone: true,
-  imports: [CommonModule, DateRangePickerComponent],
+  imports: [CommonModule, DateRangePickerComponent,DateRangePickerProto4Component],
   template: `
     <div class="page">
       <div class="section">
@@ -30,6 +31,36 @@ function lastNDays(n: number): DateRange {
         <app-date-range-picker [value]="range" (valueChange)="range = $event"></app-date-range-picker>
       </div>
     </div>
+    <div class="page">
+      <div class="section">
+    <h2>Prototype 4</h2>
+    <p class="subtitle">
+   
+
+    Date range picker with optional presets.
+    The same component supports Premium and Standard users via configuration:
+    presets are shown only for Premium users.
+  </p>
+  
+    <!-- Premium (con presets + inicial preset) -->
+    <app-date-range-picker-proto4
+      [value]="rangeProto4Premium"
+      [isPremium]="true"
+      [initialPreset]="'last90'"
+      (valueChange)="rangeProto4Premium = $event"
+    ></app-date-range-picker-proto4>
+
+    <div style="height:24px"></div>
+
+    <!-- Standard (sin presets + vacío) -->
+    <app-date-range-picker-proto4
+      [value]="rangeProto4Standard"
+      [isPremium]="false"
+      [initialPreset]="null"
+      (valueChange)="rangeProto4Standard = $event"
+    ></app-date-range-picker-proto4>
+    </div>
+    </div>
 
     <div class="page-spacer"></div>
 
@@ -38,4 +69,7 @@ function lastNDays(n: number): DateRange {
 })
 export class DemoComponent {
   range: DateRange = lastNDays(90);
+  rangeProto4Premium: DateRange = { start: null, end: null };   // se auto-inicializa con initialPreset si lo pasas
+  rangeProto4Standard: DateRange = { start: null, end: null };  // vacío
+
 }

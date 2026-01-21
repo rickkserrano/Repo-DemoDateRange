@@ -11,3 +11,4 @@ export type QuickKey =
   | 'lastYear';
 
 export type ActivePreset = QuickKey | 'custom' | null;
+export type AppliedDateRange = { start: Date; end: Date };
