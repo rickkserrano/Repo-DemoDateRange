@@ -1,0 +1,231 @@
+/* Prototype 5:
+   - Premium: presets menu (like Proto3) + custom panel (like Proto4)
+   - Standard: no menu, open custom panel directly, no left preset pane
+*/
+
+.drp5 { position: relative; }
+
+.field { display:flex; flex-direction:column; gap:6px; }
+.fieldLabel { font-size:12px; color:#6b7280; }
+
+.selectWrap{ position:relative; max-width: 520px; }
+
+.selectTrigger{
+  height:36px; width:100%;
+  max-width: 520px;
+  border:1px solid #d1d5db; border-radius:10px;
+  padding:0 10px;
+  background:#fff;
+  cursor:pointer;
+  outline:none;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  text-align:left;
+}
+.triggerText{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.placeholder{ color:#9ca3af; }
+.caret{ opacity:.7; }
+
+.fieldError { font-size:12px; color:#b91c1c; }
+.helperText { font-size:12px; color:#6b7280; }
+
+/* Premium menu (Proto3-like) */
+.menu{
+  position:absolute;
+  z-index:30;
+  top:42px;
+  left:0;
+  width:100%;
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  background:#fff;
+  box-shadow:0 18px 45px rgba(0,0,0,.12);
+  padding:6px;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.menuItem{
+  height:34px;
+  border-radius:10px;
+  border:1px solid transparent;
+  background:transparent;
+  cursor:pointer;
+  text-align:left;
+  padding:0 10px;
+}
+.menuItem:hover{ background:#f3f4f6; }
+.menuItem.selected{ background:#e5e7eb; }
+
+/* Custom panel container (Proto4-like) */
+.panel{
+  position:absolute; z-index:20; top:64px; left:0;
+  width:min(920px, 100%);
+  border:1px solid #e5e7eb; border-radius:14px;
+  background:#fff;
+  overflow:hidden;
+  box-shadow:0 18px 45px rgba(0,0,0,.12);
+  padding: 10px;
+}
+
+/* Grid splits preset pane + main pane */
+.panelGrid{
+  display:grid;
+  grid-template-columns: minmax(100px, 120px) 1fr;
+  gap:12px;
+}
+.panelGrid.noPresets{
+  grid-template-columns: 1fr;
+}
+
+/* Left presets */
+.presetPane{
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  min-width: 0;
+}
+.presetTitle{ font-size:12px; color:#6b7280; }
+.presetList{ display:flex; flex-direction:column; gap:6px; }
+.presetBtn{
+  height:34px;
+  border-radius:10px;
+  border:1px solid transparent;
+  background:transparent;
+  cursor:pointer;
+  text-align:left;
+  padding:0 10px;
+}
+.presetBtn:hover{ background:#f3f4f6; }
+.presetBtn.selected{ background:#e5e7eb; }
+
+/* Right pane */
+.mainPane{
+  min-width: 0;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.panelTop { display:flex; flex-direction:column; gap: 6px; }
+
+.inputs { display:flex; gap:10px; flex-wrap: wrap; }
+.inputs > .field{
+  flex: 1 1 140px;
+  min-width: 140px;
+}
+
+input{
+  height:36px;
+  border:1px solid #d1d5db;
+  border-radius:10px;
+  padding:0 10px;
+  cursor:pointer;
+  background:#fff;
+  outline:none;
+}
+input.active{
+  border-color:#2563eb;
+  box-shadow:0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+input.invalid{
+  border-color:#ef4444;
+  box-shadow:0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
+/* Calendars */
+.calStack{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:12px;
+}
+
+.cal {
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  padding:8px;
+}
+
+.calHeader { display:grid; grid-template-columns:32px 1fr 32px; align-items:center; gap:6px; }
+.headerCenter { display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:nowrap; }
+.select { height:30px; border:1px solid #d1d5db; border-radius:10px; padding:0 8px; background:#fff; font-size:12px; }
+.iconBtn { height:30px; width:30px; border:1px solid #d1d5db; border-radius:10px; background:#fff; cursor:pointer; }
+.iconBtn[disabled]{ opacity:.5; cursor:not-allowed; }
+
+.calMonthLabel { margin-top:8px; font-size:12px; color:#6b7280; }
+
+/* Fixed day cell size for predictable layout */
+.dow, .grid {
+  display:grid;
+  grid-template-columns:repeat(7, 38px);
+  justify-content:center;
+  gap:3px;
+  margin-top:6px;
+}
+.dowCell { font-size:11px; color:#6b7280; text-align:center; }
+
+.cell{
+  height:26px; border-radius:9px;
+  border:1px solid transparent;
+  background:#f9fafb;
+  cursor:pointer;
+}
+.cell:hover{ border-color:#d1d5db; }
+.cell.empty{ background:transparent; cursor:default; }
+.cell.inRange{ background:#e5e7eb; }
+.cell.start, .cell.end{ background:#111827; color:#fff; }
+.cell.disabledCell{ opacity:.45; cursor:not-allowed; }
+
+/* Footer */
+.footer{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin-top: 4px;
+}
+.footerRight{
+  display:flex;
+  gap:10px;
+}
+
+.btn{
+  height:34px;
+  border-radius:10px;
+  border:1px solid #111827;
+  background:#111827;
+  color:#fff;
+  padding:0 12px;
+  cursor:pointer;
+}
+.btn.ghost{ background:transparent; color:#111827; }
+
+.btn[disabled], .btn.disabledBtn{
+  opacity:.45;
+  cursor:not-allowed;
+}
+
+/* Responsive calendars: vertical on tablets */
+@media (max-width: 900px){
+  .calStack{ grid-template-columns: 1fr; }
+}
+
+/* Mobile: panel full width under trigger */
+@media (max-width: 720px){
+  .panel{
+    position:absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 100%;
+    max-width: 100%;
+    border-radius:14px;
+    padding: 10px;
+    overflow-x:auto;
+  }
+  .selectWrap{ max-width:100%; }
+  .selectTrigger{ max-width:100%; }
+}

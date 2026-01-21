@@ -347,7 +347,12 @@ bottomYearsLimited = computed(() =>
     if (!r.start && !r.end) {
       this.draft.set({ start: n, end: null });
       this.activeField.set('end');
-      this.showError.set(false);
+      // Keep validation visible after a Clear until BOTH dates are selected.
+      // This prevents the End Date warning from disappearing when only Start is picked.
+      if (this.showError()) {
+        const rr = this.draft();
+        this.showError.set(!(rr.start && rr.end));
+      }
       return;
     }
 
