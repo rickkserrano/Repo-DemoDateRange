@@ -353,8 +353,15 @@ export class DateRangePickerProto5Component {
       this.showError.set(true);
       return;
     }
+
     const r = this.draft();
-    this.commitApplied(r, null); // custom apply => no preset key
+
+    // Premium: if the draft matches a preset (and user didn't truly customize it), treat it as a preset apply.
+    // Standard: always treat as custom (they don't have preset labels).
+    const active = this.activePresetKey();
+    const presetKeyToCommit = this.isPremium && active && active !== 'custom' ? active : null;
+
+    this.commitApplied(r, presetKeyToCommit);
     this.isOpen.set(false);
     this.isMenuOpen.set(false);
     this.showError.set(false);
@@ -542,14 +549,36 @@ export class DateRangePickerProto5Component {
 
   private positionCalendarsAtStart(d: Date) {
     const startM = startOfMonth(clampToToday(d, this.today));
-    this.topMonth.set(startM);
-    this.bottomMonth.set(addMonths(startM, 1));
+    const current = startOfMonth(this.today);
+    const next = startOfMonth(addMonths(startM, 1));
+
+    // Default: show the focused month on top and the next month below.
+    if (!isAfter(next, current)) {
+      this.topMonth.set(startM);
+      this.bottomMonth.set(next);
+      return;
+    }
+
+    // If the next month is in the future, clamp to (previous, current).
+    this.bottomMonth.set(current);
+    this.topMonth.set(startOfMonth(addMonths(current, -1)));
   }
 
   private positionCalendarsAtEnd(d: Date) {
     const endM = startOfMonth(clampToToday(d, this.today));
-    this.bottomMonth.set(endM);
-    this.topMonth.set(addMonths(endM, -1));
+    const current = startOfMonth(this.today);
+    const next = startOfMonth(addMonths(endM, 1));
+
+    // Default: show the focused month on top and the next month below.
+    if (!isAfter(next, current)) {
+      this.topMonth.set(endM);
+      this.bottomMonth.set(next);
+      return;
+    }
+
+    // If the next month is in the future (e.g., end date is in the current month), clamp to (previous, current).
+    this.bottomMonth.set(current);
+    this.topMonth.set(startOfMonth(addMonths(current, -1)));
   }
 
   private recenterCalendarsForActiveField(field: ActiveField) {

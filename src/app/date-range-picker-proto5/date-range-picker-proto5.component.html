@@ -156,17 +156,8 @@
                   </option>
                 </select>
               </div>
-
-              <button
-                class="iconBtn"
-                type="button"
-                (click)="nextMonth('top')"
-                [disabled]="!canGoNext('top')"
-                aria-label="Next month"
-              >
-                →
-              </button>
-            </div>
+              <span class="iconSpacer" aria-hidden="true"></span>
+</div>
 
             <div class="calMonthLabel">{{ label(topMonth()) }}</div>
 
@@ -197,11 +188,8 @@
           <!-- BOTTOM calendar -->
           <div class="cal">
             <div class="calHeader">
-              <button class="iconBtn" type="button" (click)="prevMonth('bottom')" aria-label="Previous month">
-                ←
-              </button>
-
-              <div class="headerCenter">
+              <span class="iconSpacer" aria-hidden="true"></span>
+<div class="headerCenter">
                 <select
                   class="select"
                   [ngModel]="bottomMonthIndex()"

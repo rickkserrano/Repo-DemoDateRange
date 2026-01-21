@@ -229,3 +229,8 @@ input.invalid{
   .selectWrap{ max-width:100%; }
   .selectTrigger{ max-width:100%; }
 }
+
+
+/* Placeholder to keep calendar header layout when an arrow is hidden */
+.iconSpacer{display:inline-block;width:32px;height:32px;}
+

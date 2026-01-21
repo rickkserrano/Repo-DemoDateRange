@@ -478,17 +478,20 @@ bottomYearsLimited = computed(() =>
   }
 
   private positionCalendarsAtEnd(end: Date) {
-    const bottom = startOfMonth(end);
-    const top = startOfMonth(addMonths(bottom, -1));
-    // Prevent navigating into future months
+    const endM = startOfMonth(end);
     const current = startOfMonth(this.today);
-    if (bottom > current) {
-      this.bottomMonth.set(current);
-      this.topMonth.set(startOfMonth(addMonths(current, -1)));
+    const next = startOfMonth(addMonths(endM, 1));
+
+    // Default: show the focused month on top and the next month below.
+    if (next <= current) {
+      this.topMonth.set(endM);
+      this.bottomMonth.set(next);
       return;
     }
-    this.topMonth.set(top);
-    this.bottomMonth.set(bottom);
+
+    // If the next month is in the future (e.g., end date is in the current month), clamp to (previous, current).
+    this.bottomMonth.set(current);
+    this.topMonth.set(startOfMonth(addMonths(current, -1)));
   }
 
   private positionCalendarsAtStart(start: Date) {
