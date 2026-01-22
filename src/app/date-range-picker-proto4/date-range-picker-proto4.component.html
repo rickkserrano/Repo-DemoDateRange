@@ -254,19 +254,24 @@
         </div>
 
         <div class="footer">
-          <button class="btn ghost" type="button" (click)="clearDraft()">Clear</button>
+          <button class="btn ghost" type="button" (click)="closePanel()">Close</button>
 
-          <button
-            class="btn"
-            type="button"
-            (click)="apply()"
-            [disabled]="!canApply()"
-            [class.disabledBtn]="!canApply()"
-          >
-            Apply dates
-          </button>
+          <div class="footerRight">
+            <button class="btn ghost" type="button" (click)="clearDraft()">Reset</button>
+
+            <button
+              class="btn"
+              type="button"
+              (click)="apply()"
+              [disabled]="!canApply()"
+              [class.disabledBtn]="!canApply()"
+            >
+              Apply
+            </button>
+          </div>
         </div>
       </section>
     </div>
   </div>
 </div>
+

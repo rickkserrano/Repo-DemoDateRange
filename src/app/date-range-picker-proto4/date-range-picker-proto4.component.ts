@@ -24,6 +24,12 @@ import {
 import { PRESETS, calcPresetRange, DEFAULT_PRESET } from '../date-range/presets';
 import { ActiveField, ActivePreset, DateRange, QuickKey } from '../date-range/date-range.types';
 
+function addDays(d: Date, deltaDays: number): Date {
+  const x = new Date(d);
+  x.setDate(x.getDate() + deltaDays);
+  return normalizeDate(x);
+}
+
 type CalId = 'top' | 'bottom';
 
 type PresetItem = { key: QuickKey; label: string } | { key: 'custom'; label: string };
@@ -322,6 +328,12 @@ if (this.isPremium && this.initialPreset && isEmpty) {
     else this.openFreshCalendars();
   }
 
+  /** Close button: same as clicking outside (discard draft). */
+  closePanel() {
+    this.cancel();
+  }
+
+
   /** --- Presets (left panel) --- */
   selectPreset(key: ActivePreset) {
   if (key === null) return;
@@ -497,12 +509,12 @@ bottomYearsLimited = computed(() =>
     const r = this.draft();
     return !!r.end && isSameDay(d, r.end);
   }
-
   pickDate(d: Date) {
     if (this.isCellDisabled(d)) return;
 
     const n = normalizeDate(d);
     const r = this.draft();
+    const todayN = normalizeDate(this.today);
 
     // If user started from a preset and then edits manually => switch context to Custom (no reset).
     if (this.isPremium && this.draftMode() === 'preset') {
@@ -511,12 +523,17 @@ bottomYearsLimited = computed(() =>
       this.draftPresetKey.set(null);
     }
 
-    // If draft is empty, set start.
+    const clampEndForStart = (start: Date): Date => {
+      const next = addDays(start, 1);
+      return next > todayN ? todayN : next;
+    };
+
+    // 1) No selection yet => first click sets Start, focus moves to End.
     if (!r.start && !r.end) {
       this.draft.set({ start: n, end: null });
       this.activeField.set('end');
-      // Keep validation visible after a Clear until BOTH dates are selected.
-      // This prevents the End Date warning from disappearing when only Start is picked.
+
+      // Keep validation visible after a Reset/Clear until BOTH dates are selected.
       if (this.showError()) {
         const rr = this.draft();
         this.showError.set(!(rr.start && rr.end));
@@ -524,40 +541,58 @@ bottomYearsLimited = computed(() =>
       return;
     }
 
-    // If only start is set, second click sets end (or swaps).
+    // 2) Start set but End not set => treat click as End attempt.
     if (r.start && !r.end) {
-      if (n < r.start) {
-        this.draft.set({ start: n, end: r.start });
-      } else {
+      if (n >= r.start) {
+        // Valid end.
         this.draft.set({ start: r.start, end: n });
+        this.activeField.set('start'); // pivot back to start
+        this.showError.set(false);
+      } else {
+        // Clicked before start: move start back, auto-set end to next day (clamped), keep focus on end.
+        const newStart = n;
+        const newEnd = clampEndForStart(newStart);
+        this.draft.set({ start: newStart, end: newEnd });
+        this.activeField.set('end');
+        // End may already be valid; we still keep user on end for adjustment.
+        this.showError.set(false);
       }
-      this.activeField.set('start'); // back to start editing by default
-      this.showError.set(false);
       return;
     }
 
-    // Both start and end are set: edit based on active field,
-    // with elastic behavior when crossing.
+    // 3) Both Start and End set => edit based on active field + special rules.
     if (r.start && r.end) {
-      if (this.activeField() === 'start') {
-        if (n <= r.end) {
-          this.draft.set({ start: n, end: r.end });
+      const field = this.activeField();
+
+      if (field === 'start') {
+        if (n > r.end) {
+          // Click beyond current end: restart range at clicked day; end becomes next day (clamped); focus end.
+          const newStart = n;
+          const newEnd = clampEndForStart(newStart);
+          this.draft.set({ start: newStart, end: newEnd });
+          this.activeField.set('end');
         } else {
-          // Crossed end: extend end and move focus to end
-          this.draft.set({ start: r.start, end: n });
+          // Click inside (or before) current range: move start to clicked day; focus end.
+          this.draft.set({ start: n, end: r.end });
           this.activeField.set('end');
         }
-      } else {
-        // editing end
-        if (n >= r.start) {
-          this.draft.set({ start: r.start, end: n });
-        } else {
-          // Crossed start: extend start and move focus to start
-          this.draft.set({ start: n, end: r.end });
-          this.activeField.set('start');
-        }
+        this.showError.set(false);
+        return;
       }
-      this.showError.set(false);
+
+      // field === 'end'
+      if (n >= r.start) {
+        this.draft.set({ start: r.start, end: n });
+        this.activeField.set('start'); // pivot back to start
+        this.showError.set(false);
+      } else {
+        // End picked before start: move start back; end becomes next day (clamped); keep focus end.
+        const newStart = n;
+        const newEnd = clampEndForStart(newStart);
+        this.draft.set({ start: newStart, end: newEnd });
+        this.activeField.set('end');
+        this.showError.set(false);
+      }
     }
   }
 

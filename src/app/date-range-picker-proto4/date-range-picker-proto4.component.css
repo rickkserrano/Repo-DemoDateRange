@@ -352,3 +352,17 @@ background: #fff;
 }
 
 .pickerPopover.year .pickerGrid{ padding-right:24px; }
+
+
+/* --- Footer buttons layout (Proto4 spec) --- */
+.footer{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.footerRight{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
