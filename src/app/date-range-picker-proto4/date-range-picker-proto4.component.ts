@@ -658,11 +658,26 @@ isStart(d: Date): boolean {
     this.activeField.set('start');
     this.showError.set(false);
 
+    // Standard "Clear" should also clear the applied selection.
+    this.clearApplied();
+
     this.openFreshCalendars();
     this.isOpen.set(false);
   }
 
-  private addDaysLocal(d: Date, days: number): Date {
+  
+  private clearApplied() {
+    // Clears the applied value (used by Standard user's Clear).
+    const empty: DateRange = { start: null, end: null };
+    this.appliedValue.set(empty);
+    this.valueChange.emit(empty);
+
+    this.activePresetKey.set(null);
+    this.appliedDisplayMode.set('custom');
+    this.appliedPresetKey.set(null);
+  }
+
+private addDaysLocal(d: Date, days: number): Date {
   const x = new Date(d);
   x.setDate(x.getDate() + days);
   return x;
