@@ -257,6 +257,8 @@
           <button class="btn ghost" type="button" (click)="closePanel()">Close</button>
 
           <div class="footerRight">
+            <span class="rangeLimitWarning" *ngIf="rangeTooLarge()">{{ rangeTooLargeMessage() }}</span>
+
             <button class="btn ghost" type="button" (click)="clearDraft()">Reset</button>
 
             <button

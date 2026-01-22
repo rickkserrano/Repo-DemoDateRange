@@ -366,3 +366,13 @@ background: #fff;
   align-items:center;
   gap:10px;
 }
+
+
+/* Max range warning (shown next to Reset) */
+.rangeLimitWarning {
+  font-size: 12px;
+  color: #b91c1c;
+  margin-left: 12px;
+  line-height: 1;
+  white-space: nowrap;
+}

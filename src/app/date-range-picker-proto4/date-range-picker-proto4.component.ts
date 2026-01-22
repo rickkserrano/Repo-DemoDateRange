@@ -61,6 +61,20 @@ export class DateRangePickerProto4Component {
    */
   @Input() initialPreset: QuickKey | null | undefined = DEFAULT_PRESET;
 
+/**
+ * Maximum allowed range between start and end.
+ * - If maxRangeDays is provided, it takes priority.
+ * - Otherwise maxRangeYears is used.
+ */
+@Input() maxRangeDays?: number;
+@Input() maxRangeYears = 2;
+
+/**
+ * Message template shown when the range exceeds the limit.
+ * Use {limit} and {unit} placeholders (e.g. "Date range cannot exceed {limit} {unit}.").
+ */
+@Input() maxRangeMessageTemplate = 'Please select a date range that does not exceed {limit} {unit}.';
+
   /** Presets list shown in the left panel (order matters). */
   presets: PresetItem[] = [
     ...PRESETS.filter((p) => p.key !== 'lastYear'),
@@ -610,9 +624,56 @@ bottomYearsLimited = computed(() =>
     if (this.isPremium) this.activePresetKey.set('custom');
   }
 
-  canApply = computed(() => !!this.draft().start && !!this.draft().end);
+  private addDaysLocal(d: Date, days: number): Date {
+  const x = new Date(d);
+  x.setDate(x.getDate() + days);
+  return x;
+}
 
-  apply() {
+private addYearsLocal(d: Date, years: number): Date {
+  const x = new Date(d);
+  x.setFullYear(x.getFullYear() + years);
+  return x;
+}
+
+private diffDaysInclusive(start: Date, end: Date): number {
+  const s = normalizeDate(start);
+  const e = normalizeDate(end);
+  const ms = e.getTime() - s.getTime();
+  return Math.floor(ms / 86400000) + 1;
+}
+
+rangeTooLarge = computed(() => {
+  const r = this.draft();
+  if (!r.start || !r.end) return false;
+
+  const s = normalizeDate(r.start);
+  const e = normalizeDate(r.end);
+
+  // Days takes priority when provided
+  if (this.maxRangeDays != null) {
+    const days = this.diffDaysInclusive(s, e);
+    return days > this.maxRangeDays;
+  }
+
+  const years = this.maxRangeYears ?? 2;
+  const limitEnd = normalizeDate(this.addYearsLocal(s, years));
+  return e.getTime() > limitEnd.getTime();
+});
+
+rangeTooLargeMessage = computed(() => {
+  if (!this.rangeTooLarge()) return '';
+  const useDays = this.maxRangeDays != null;
+  const limit = useDays ? this.maxRangeDays! : (this.maxRangeYears ?? 2);
+  const unit = useDays ? (limit === 1 ? 'day' : 'days') : (limit === 1 ? 'year' : 'years');
+  return this.maxRangeMessageTemplate
+    .replace('{limit}', String(limit))
+    .replace('{unit}', unit);
+});
+
+canApply = computed(() => !!this.draft().start && !!this.draft().end && !this.rangeTooLarge());
+
+apply() {
   this.closePickers();
   if (!this.canApply()) {
     this.showError.set(true);
