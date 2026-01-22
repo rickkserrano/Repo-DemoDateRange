@@ -49,3 +49,8 @@ h2 {
 .page-spacer {
   height: 850px; /* Useful when demoing scrolling/overlay behavior */
 }
+
+.user-type {
+  color: #000;          /* negro */
+  font-weight: 600;     /* bold (puedes usar 700 si lo quieres más fuerte) */
+}

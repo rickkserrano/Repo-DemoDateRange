@@ -80,6 +80,13 @@ export class DateRangePickerProto4Component {
     ...PRESETS.filter((p) => p.key !== 'lastYear'),
     { key: 'custom' as const, label: 'Custom' },
   ];
+  visiblePresets(): PresetItem[] {
+    // Premium should not show "Today" in the left preset panel per UX spec.
+    if (this.isPremium) return this.presets.filter((p) => p.key !== 'today');
+    return this.presets;
+  }
+
+
 
   
 
@@ -292,7 +299,7 @@ if (this.isPremium && this.initialPreset && isEmpty) {
 
   placeholderText = computed(() => {
     const r = this.appliedValue();
-    return r.start && r.end ? '' : 'Select range';
+    return r.start && r.end ? '' : 'Select start and end dates';
   });
 
   /** Message under the field (same idea as P3). */
@@ -514,7 +521,12 @@ bottomYearsLimited = computed(() =>
     return n >= r.start && n <= r.end;
   }
 
-  isStart(d: Date): boolean {
+  
+  isToday(d: Date): boolean {
+    return isSameDay(normalizeDate(d), normalizeDate(this.today));
+  }
+
+isStart(d: Date): boolean {
     const r = this.draft();
     return !!r.start && isSameDay(d, r.start);
   }
@@ -611,17 +623,43 @@ bottomYearsLimited = computed(() =>
   }
 
   /** --- Clear / Apply --- */
+  
   clearDraft() {
     this.closePickers();
+
+    if (this.isPremium) {
+      // Premium "Reset": revert back to the last applied state, keep the calendar open.
+      const prev = this.appliedValue();
+      this.draft.set({ start: prev.start, end: prev.end });
+
+      // Restore highlight/context based on what was last applied.
+      if (this.appliedDisplayMode() === 'preset' && this.appliedPresetKey()) {
+        this.activePresetKey.set(this.appliedPresetKey()!);
+        this.draftMode.set('preset');
+        this.draftPresetKey.set(this.appliedPresetKey()!);
+      } else {
+        this.activePresetKey.set('custom');
+        this.draftMode.set('custom');
+        this.draftPresetKey.set(null);
+      }
+
+      this.activeField.set('start');
+      this.showError.set(false);
+
+      // Ensure calendars are positioned around the restored draft.
+      if (prev.start) this.positionCalendarsAtStart(prev.start);
+      else this.openFreshCalendars();
+
+      return;
+    }
+
+    // Standard "Clear": clear selection and close the calendar. No field warnings.
     this.draft.set({ start: null, end: null });
     this.activeField.set('start');
-    this.showError.set(true);
+    this.showError.set(false);
 
-    // Reset months to previous + current (like Prototype 3).
     this.openFreshCalendars();
-
-    // If premium, clear preset highlight.
-    if (this.isPremium) this.activePresetKey.set('custom');
+    this.isOpen.set(false);
   }
 
   private addDaysLocal(d: Date, days: number): Date {
@@ -672,6 +710,17 @@ rangeTooLargeMessage = computed(() => {
 });
 
 canApply = computed(() => !!this.draft().start && !!this.draft().end && !this.rangeTooLarge());
+
+applyTooltipText(): string | null {
+  if (this.isPremium) return null;
+  const r = this.draft();
+  if (r.start && r.end) return null;
+  // Only show tooltip guidance for Standard users when Apply is disabled due to missing dates.
+  if (!r.start && !r.end) return 'Select a start and end date to apply';
+  if (!r.end) return 'Select an end date to apply';
+  return 'Select a start date to apply';
+}
+
 
 apply() {
   this.closePickers();

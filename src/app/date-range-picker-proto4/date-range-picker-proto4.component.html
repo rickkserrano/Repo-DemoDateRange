@@ -32,7 +32,7 @@
 
         <div class="presetList">
           <button
-            *ngFor="let p of presets"
+            *ngFor="let p of visiblePresets()"
             type="button"
             class="presetBtn"
             [class.selected]="activePresetKey() === p.key"
@@ -162,6 +162,7 @@
                   (click)="pickDate(cell)"
                 >
                   {{ cell.getDate() }}
+                  <span class="todayDot" *ngIf="isToday(cell)"></span>
                 </button>
               </ng-container>
             </div>
@@ -247,6 +248,7 @@
                   (click)="pickDate(cell)"
                 >
                   {{ cell.getDate() }}
+                  <span class="todayDot" *ngIf="isToday(cell)"></span>
                 </button>
               </ng-container>
             </div>
@@ -259,17 +261,23 @@
           <div class="footerRight">
             <span class="rangeLimitWarning" *ngIf="rangeTooLarge()">{{ rangeTooLargeMessage() }}</span>
 
-            <button class="btn ghost" type="button" (click)="clearDraft()">Reset</button>
+            <button class="btn ghost" type="button" (click)="clearDraft()">{{ isPremium ? 'Reset' : 'Clear' }}</button>
 
-            <button
-              class="btn"
-              type="button"
-              (click)="apply()"
-              [disabled]="!canApply()"
-              [class.disabledBtn]="!canApply()"
-            >
-              Apply
-            </button>
+            <div class="applyWrap">
+  <button
+    class="btn"
+    type="button"
+    (click)="apply()"
+    [disabled]="!canApply()"
+    [class.disabledBtn]="!canApply()"
+  >
+    Apply
+  </button>
+
+  <div class="applyTooltip" *ngIf="applyTooltipText()">
+    {{ applyTooltipText() }}
+  </div>
+</div>
           </div>
         </div>
       </section>

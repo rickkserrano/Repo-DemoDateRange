@@ -152,6 +152,7 @@ input.invalid{
 .dowCell { font-size:11px; color:#6b7280; text-align:center; }
 
 .cell{
+  position:relative;
   height:26px; border-radius:9px;
   border:1px solid transparent;
   background:#f9fafb;
@@ -159,6 +160,25 @@ input.invalid{
 }
 .cell:hover{ border-color:#d1d5db; }
 .cell.empty{ background:transparent; cursor:default; }
+
+.todayDot{
+  position:absolute;
+  left:50%;
+  bottom:3px;
+  width:4px;
+  height:4px;
+  border-radius:999px;
+  background:#111827;
+  transform:translateX(-50%);
+  pointer-events:none;
+}
+.cell.selected .todayDot,
+.cell.start .todayDot,
+.cell.end .todayDot{
+  /* keep dot visible but do not interfere with selection styles */
+  background:#111827;
+}
+
 .cell.inRange{ background:#e5e7eb; }
 .cell.start, .cell.end{ background:#111827; color:#fff; }
 .cell.disabledCell{ opacity:.45; cursor:not-allowed; }
@@ -375,4 +395,41 @@ background: #fff;
   margin-left: 12px;
   line-height: 1;
   white-space: nowrap;
+}
+
+
+/* Apply tooltip (Standard users) */
+.applyWrap{
+  position:relative;
+  display:inline-block;
+}
+.applyTooltip{
+  position:absolute;
+  right:0;
+  bottom:calc(100% + 10px);
+  background:#111827;
+  color:#fff;
+  padding:8px 10px;
+  border-radius:12px;
+  font-size:12px;
+  line-height:1.2;
+  white-space:nowrap;
+  opacity:0;
+  visibility:hidden;
+  transform:translateY(4px);
+  pointer-events:none;
+  z-index: 50;
+}
+.applyTooltip:after{
+  content:'';
+  position:absolute;
+  right:16px;
+  top:100%;
+  border:6px solid transparent;
+  border-top-color:#111827;
+}
+.applyWrap:hover .applyTooltip{
+  opacity:1;
+  visibility:visible;
+  transform:translateY(0);
 }

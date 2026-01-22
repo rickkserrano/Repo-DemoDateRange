@@ -19,9 +19,8 @@ function lastNDays(n: number): DateRange {
   imports: [CommonModule, DateRangePickerComponent, DateRangePickerProto4Component, DateRangePickerProto5Component],
   template: `
     <div class="page">
-      <!-- ========================= -->
-      <!-- Prototype 3 -->
-      <!-- ========================= -->
+    <!--
+
       <div class="section">
         <h2>Prototype 3</h2>
         <p class="subtitle">
@@ -39,7 +38,8 @@ function lastNDays(n: number): DateRange {
           Current selection:
           <code>{{ rangeProto3.start?.toDateString() }} - {{ rangeProto3.end?.toDateString() }}</code>
         </div>
-      </div>
+      </div> 
+      -->
       <!-- ========================= -->
       <!-- Prototype 4 -->
       <!-- ========================= -->
@@ -50,7 +50,7 @@ function lastNDays(n: number): DateRange {
         </p>
 
         <div class="row">
-          <div class="label">Premium</div>
+          <span class="user-type">Premium</span>
           <app-date-range-picker-proto4
             [value]="rangeProto4Premium"
             [isPremium]="true"
@@ -60,7 +60,7 @@ function lastNDays(n: number): DateRange {
         </div>
 
         <div class="row" style="margin-top:12px;">
-          <div class="label">Standard</div>
+        <span class="user-type">Standard</span>
           <app-date-range-picker-proto4
             [value]="rangeProto4Standard"
             [isPremium]="false"
@@ -69,9 +69,8 @@ function lastNDays(n: number): DateRange {
           ></app-date-range-picker-proto4>
         </div>
       </div>
-      <!-- ========================= -->
-      <!-- Prototype 5 -->
-      <!-- ========================= -->
+
+      <!--
       <div class="section">
         <h2>Prototype 5</h2>
         <p class="subtitle">
@@ -100,7 +99,7 @@ function lastNDays(n: number): DateRange {
           ></app-date-range-picker-proto5>
         </div>
       </div>
-
+      -->
       <div class="page-spacer"></div>
       <p>By Ricardo Serrano</p>
     </div>
