@@ -217,3 +217,138 @@ input.invalid{
 /* Placeholder to keep calendar header layout when an arrow is hidden */
 .iconSpacer{display:inline-block;width:32px;height:32px;}
 
+
+
+
+/* --- Month/Year grid pickers (Prototype 4) --- */
+.calHeader .headerCenter {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.pickerWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.pickerBtn {
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid #d0d7e2;
+  border-radius: 12px;
+  background: #fff;
+  font: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.pickerBtn .caret {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.pickerPopover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+    max-width: calc(100vw - 32px);
+background: #fff;
+  border: 1px solid #e3e7ef;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+  z-index: 60;
+  overflow: hidden;
+}
+
+.pickerPopover.year {
+  width: 240px;
+}
+
+.pickerTitle {
+  font-weight: 600;
+  padding: 8px 10px;
+  border-bottom: 1px solid #eef1f6;
+  text-align: center;
+}
+
+.pickerGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 10px;
+}
+
+.pickerCell {
+  height: 34px;
+  border: 1px solid #d0d7e2;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+
+.pickerCell.selected {
+  background: rgba(56, 142, 255, 0.15);
+  border-color: rgba(56, 142, 255, 0.35);
+}
+
+.pickerCell:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.yearScroll {
+  position: relative;
+  overflow: hidden; /* wheel-paging controls the content */
+  padding-bottom: 6px;
+  padding-right: 14px; /* reserve space for scroll hint */
+}
+
+/* subtle "scroll available" hint for Year picker (right side) */
+.pickerPopover.year::after{
+  content:"";
+  position:absolute;
+  right:8px;
+  top:50%;
+  transform:translateY(-50%);
+  width:3px;
+  height:44px;
+  border-radius:3px;
+  background:rgba(17,24,39,0.22);
+  pointer-events:none;
+}
+
+/* soft fade to suggest more content (top/bottom) */
+.pickerPopover.year .yearScroll::before,
+.pickerPopover.year .yearScroll::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 14px;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.pickerPopover.year .yearScroll::before {
+  top: 0;
+  background: linear-gradient(to bottom, rgba(255,255,255,1), rgba(255,255,255,0));
+}
+
+.pickerPopover.year .yearScroll::after {
+  bottom: 0;
+  background: linear-gradient(to top, rgba(255,255,255,1), rgba(255,255,255,0));
+}
+
+
+.pickerPopover.year .pickerCell {
+  font-size: 11.5px;
+}
+
+.pickerPopover.year .pickerGrid{ padding-right:24px; }

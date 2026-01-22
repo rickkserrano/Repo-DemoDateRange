@@ -90,6 +90,117 @@ export class DateRangePickerProto4Component {
   bottomMonth = signal<Date>(startOfMonth(this.today));
 
   months = Array.from({ length: 12 }).map((_, i) => monthName(i));
+
+  /** Short month labels for the Month grid picker */
+  monthsShort = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  /** Month label for the picker button */
+  monthShortLabel(index: number): string {
+    return this.monthsShort[index] ?? '';
+  }
+
+  monthFullLabel(index: number): string {
+    return this.months[index] ?? '';
+  }
+
+  /** Open sub-picker state (month/year) for top/bottom calendar headers */
+  private openPicker = signal<{ cal: CalId; kind: 'month' | 'year' } | null>(null);
+
+  private yearAnchorTop = signal<number>(this.today.getFullYear());
+  private yearAnchorBottom = signal<number>(this.today.getFullYear());
+
+  /** Year picker shows exactly one 12-cell page (4x3). End-year is bottom-right. */
+  private yearPageEndTop = signal<number>(this.today.getFullYear());
+  private yearPageEndBottom = signal<number>(this.today.getFullYear());
+
+  isMonthPickerOpen(cal: CalId): boolean {
+    const v = this.openPicker();
+    return !!v && v.cal === cal && v.kind === 'month';
+  }
+
+  isYearPickerOpen(cal: CalId): boolean {
+    const v = this.openPicker();
+    return !!v && v.cal === cal && v.kind === 'year';
+  }
+
+  private closePickers(): void {
+    this.openPicker.set(null);
+  }
+
+  toggleMonthPicker(cal: CalId): void {
+    if (this.isMonthPickerOpen(cal)) {
+      this.closePickers();
+      return;
+    }
+    this.openPicker.set({ cal, kind: 'month' });
+  }
+
+  toggleYearPicker(cal: CalId): void {
+    if (this.isYearPickerOpen(cal)) {
+      this.closePickers();
+      return;
+    }
+
+    const todayYear = this.today.getFullYear();
+    const selected = cal === 'top' ? this.topYearValue() : this.bottomYearValue();
+
+    // Page end-year rules:
+    // - If selected year is within the newest 12 (todayYear-11..todayYear) keep the newest page (ends at todayYear).
+    // - Otherwise open the page that ends at the selected year.
+    const newestWindowStart = todayYear - 11;
+    const endYear = selected >= newestWindowStart ? todayYear : Math.min(selected, todayYear);
+
+    if (cal === 'top') {
+      this.yearAnchorTop.set(Math.min(selected, todayYear));
+      this.yearPageEndTop.set(endYear);
+    } else {
+      this.yearAnchorBottom.set(Math.min(selected, todayYear));
+      this.yearPageEndBottom.set(endYear);
+    }
+
+    this.openPicker.set({ cal, kind: 'year' });
+  }
+
+
+
+  pickMonth(cal: CalId, monthIndex: number): void {
+    this.setMonthIndex(cal, monthIndex);
+    this.closePickers();
+  }
+
+  pickYear(cal: CalId, year: number): void {
+    this.setYearValue(cal, year);
+    this.closePickers();
+  }
+
+    /** Current end-year (bottom-right) for the visible 12-cell Year grid */
+  yearPageEnd(cal: CalId): number {
+    return cal === 'top' ? this.yearPageEndTop() : this.yearPageEndBottom();
+  }
+
+  /** Wheel pagination for Year picker: moves by 12 years (3 rows) */
+  onYearWheel(cal: CalId, ev: WheelEvent): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+
+    const todayYear = this.today.getFullYear();
+    const minEnd = 1900 + 11;
+    const delta = ev.deltaY > 0 ? 12 : -12;
+
+    const currentEnd = this.yearPageEnd(cal);
+    let nextEnd = currentEnd + delta;
+    if (nextEnd > todayYear) nextEnd = todayYear;
+    if (nextEnd < minEnd) nextEnd = minEnd;
+
+    if (cal === 'top') this.yearPageEndTop.set(nextEnd);
+    else this.yearPageEndBottom.set(nextEnd);
+  }
+
+  yearsForEndYear(endYear: number): number[] {
+    const start = endYear - 11;
+    return Array.from({ length: 12 }, (_, i) => start + i);
+  }
+
   dow = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
   /** --- Initialization --- */
@@ -169,6 +280,7 @@ export class DateRangePickerProto4Component {
   }
 
   cancel() {
+    this.closePickers();
     // Discard draft changes and restore applied state.
     this.draft.set({ ...this.appliedValue() });
     this.showError.set(false);
@@ -395,6 +507,7 @@ bottomYearsLimited = computed(() =>
 
   /** --- Clear / Apply --- */
   clearDraft() {
+    this.closePickers();
     this.draft.set({ start: null, end: null });
     this.activeField.set('start');
     this.showError.set(true);
@@ -409,6 +522,7 @@ bottomYearsLimited = computed(() =>
   canApply = computed(() => !!this.draft().start && !!this.draft().end);
 
   apply() {
+    this.closePickers();
     if (!this.canApply()) {
       this.showError.set(true);
       return;

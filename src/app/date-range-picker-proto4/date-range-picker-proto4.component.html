@@ -90,37 +90,57 @@
               </button>
 
               <div class="headerCenter">
-                <select
-                  class="select"
-                  [ngModel]="topMonthIndex()"
-                  (ngModelChange)="setMonthIndex('top', $event)"
-                >
-                  <option
-                    *ngFor="let m of months; let i=index"
-                    [ngValue]="i"
-                    [disabled]="isFutureMonth('top', i, topYearValue())"
-                  >
-                    {{ m }}
-                  </option>
-                </select>
+                <div class="pickerWrap">
+                  <button type="button" class="pickerBtn" (click)="toggleMonthPicker('top')" [class.open]="isMonthPickerOpen('top')">
+                    {{ monthFullLabel(topMonthIndex()) }}
+                    <span class="caret">▾</span>
+                  </button>
 
-                <select
-                  class="select"
-                  [ngModel]="topYearValue()"
-                  (ngModelChange)="setYearValue('top', $event)"
-                >
-                  <option
-                    *ngFor="let y of topYearsLimited()"
-                    [ngValue]="y"
-                    [disabled]="isYearOptionDisabled('top', y)"
-                  >
-                    {{ y }}
-                  </option>
-                </select>
+                  <div class="pickerPopover" *ngIf="isMonthPickerOpen('top')" (mousedown)="$event.stopPropagation()">
+                    <div class="pickerTitle">Month</div>
+                    <div class="pickerGrid">
+                      <button
+                        type="button"
+                        class="pickerCell"
+                        *ngFor="let m of monthsShort; let i = index"
+                        [disabled]="isFutureMonth('top', i, topYearValue())"
+                        [class.selected]="i === topMonthIndex()"
+                        (click)="pickMonth('top', i)"
+                      >
+                        {{ m }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="pickerWrap">
+                  <button type="button" class="pickerBtn" (click)="toggleYearPicker('top')" [class.open]="isYearPickerOpen('top')">
+                    {{ topYearValue() }}
+                    <span class="caret">▾</span>
+                  </button>
+
+                  <div class="pickerPopover year" *ngIf="isYearPickerOpen('top')" (mousedown)="$event.stopPropagation()">
+                    <div class="pickerTitle">Year</div>
+                    <div class="yearScroll" (wheel)="onYearWheel('top', $event)">
+                      <div class="pickerGrid">
+                        <button
+                          type="button"
+                          class="pickerCell"
+                          *ngFor="let y of yearsForEndYear(yearPageEnd('top'))"
+                          [disabled]="isYearOptionDisabled('top', y)"
+                          [class.selected]="y === topYearValue()"
+                          (click)="pickYear('top', y)"
+                        >
+                          {{ y }}
+                        </button>
+                      </div>
+                                          </div>
+                  </div>
+                </div>
               </div>
-              <span class="iconSpacer" aria-hidden="true"></span>
-</div>
 
+              <span class="iconSpacer" aria-hidden="true"></span>
+            </div>
             <div class="calMonthLabel">{{ label(topMonth()) }}</div>
 
             <div class="dow">
@@ -151,47 +171,61 @@
           <div class="cal">
             <div class="calHeader">
               <span class="iconSpacer" aria-hidden="true"></span>
-<div class="headerCenter">
-                <select
-                  class="select"
-                  [ngModel]="bottomMonthIndex()"
-                  (ngModelChange)="setMonthIndex('bottom', $event)"
-                >
-                  <option
-                    *ngFor="let m of months; let i=index"
-                    [ngValue]="i"
-                    [disabled]="isFutureMonth('bottom', i, bottomYearValue())"
-                  >
-                    {{ m }}
-                  </option>
-                </select>
 
-                <select
-                  class="select"
-                  [ngModel]="bottomYearValue()"
-                  (ngModelChange)="setYearValue('bottom', $event)"
-                >
-                  <option
-                    *ngFor="let y of bottomYearsLimited()"
-                    [ngValue]="y"
-                    [disabled]="isYearOptionDisabled('bottom', y)"
-                  >
-                    {{ y }}
-                  </option>
-                </select>
+              <div class="headerCenter">
+                <div class="pickerWrap">
+                  <button type="button" class="pickerBtn" (click)="toggleMonthPicker('bottom')" [class.open]="isMonthPickerOpen('bottom')">
+                    {{ monthFullLabel(bottomMonthIndex()) }}
+                    <span class="caret">▾</span>
+                  </button>
+
+                  <div class="pickerPopover" *ngIf="isMonthPickerOpen('bottom')" (mousedown)="$event.stopPropagation()">
+                    <div class="pickerTitle">Month</div>
+                    <div class="pickerGrid">
+                      <button
+                        type="button"
+                        class="pickerCell"
+                        *ngFor="let m of monthsShort; let i = index"
+                        [disabled]="isFutureMonth('bottom', i, bottomYearValue())"
+                        [class.selected]="i === bottomMonthIndex()"
+                        (click)="pickMonth('bottom', i)"
+                      >
+                        {{ m }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="pickerWrap">
+                  <button type="button" class="pickerBtn" (click)="toggleYearPicker('bottom')" [class.open]="isYearPickerOpen('bottom')">
+                    {{ bottomYearValue() }}
+                    <span class="caret">▾</span>
+                  </button>
+
+                  <div class="pickerPopover year" *ngIf="isYearPickerOpen('bottom')" (mousedown)="$event.stopPropagation()">
+                    <div class="pickerTitle">Year</div>
+                    <div class="yearScroll" (wheel)="onYearWheel('bottom', $event)">
+                      <div class="pickerGrid">
+                        <button
+                          type="button"
+                          class="pickerCell"
+                          *ngFor="let y of yearsForEndYear(yearPageEnd('bottom'))"
+                          [disabled]="isYearOptionDisabled('bottom', y)"
+                          [class.selected]="y === bottomYearValue()"
+                          (click)="pickYear('bottom', y)"
+                        >
+                          {{ y }}
+                        </button>
+                      </div>
+                                          </div>
+                  </div>
+                </div>
               </div>
 
-              <button
-                class="iconBtn"
-                type="button"
-                (click)="nextMonth('bottom')"
-                [disabled]="!canGoNext('bottom')"
-                aria-label="Next month"
-              >
+              <button class="iconBtn" type="button" (click)="nextMonth('bottom')" [disabled]="!canGoNext('bottom')" aria-label="Next month">
                 →
               </button>
             </div>
-
             <div class="calMonthLabel">{{ label(bottomMonth()) }}</div>
 
             <div class="dow">
