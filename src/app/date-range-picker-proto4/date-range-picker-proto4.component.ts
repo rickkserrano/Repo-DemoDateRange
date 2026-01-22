@@ -26,6 +26,8 @@ import { ActiveField, ActivePreset, DateRange, QuickKey } from '../date-range/da
 
 type CalId = 'top' | 'bottom';
 
+type PresetItem = { key: QuickKey; label: string } | { key: 'custom'; label: string };
+
 @Component({
   selector: 'app-date-range-picker-proto4',
   standalone: true,
@@ -54,7 +56,10 @@ export class DateRangePickerProto4Component {
   @Input() initialPreset: QuickKey | null | undefined = DEFAULT_PRESET;
 
   /** Presets list shown in the left panel (order matters). */
-  presets = PRESETS;
+  presets: PresetItem[] = [
+    ...PRESETS.filter((p) => p.key !== 'lastYear'),
+    { key: 'custom' as const, label: 'Custom' },
+  ];
 
   
 
@@ -84,6 +89,18 @@ export class DateRangePickerProto4Component {
 
   /** Track which preset is currently "active" (based on applied value). */
   activePresetKey = signal<ActivePreset>(null);
+
+  /**
+   * Tracks how the CURRENT applied value should be displayed:
+   * - 'preset' => show preset label (premium only, and only when user explicitly applied a preset without edits)
+   * - 'custom' => show date range
+   */
+  appliedDisplayMode = signal<'preset' | 'custom'>('custom');
+  appliedPresetKey = signal<QuickKey | null>(null);
+
+  /** Tracks how the CURRENT draft was produced (for Apply semantics). */
+  draftMode = signal<'preset' | 'custom'>('custom');
+  draftPresetKey = signal<QuickKey | null>(null);
 
   /** Calendar months: two consecutive months */
   topMonth = signal<Date>(startOfMonth(addMonths(this.today, -1)));
@@ -209,15 +226,28 @@ export class DateRangePickerProto4Component {
   ngOnInit() {
     // Sync internal applied state from the controlled input.
     this.appliedValue.set(this.value ?? { start: null, end: null });
+// If empty + premium + initial preset provided => apply once.
+const isEmpty = !this.value?.start && !this.value?.end;
+if (this.isPremium && this.initialPreset && isEmpty) {
+  const r = calcPresetRange(this.initialPreset, this.today);
+  this.commitApplied(r, {
+    activePreset: this.initialPreset,
+    displayMode: 'preset',
+    presetKey: this.initialPreset,
+  });
+} else {
+  const detected = this.isPremium ? this.detectPreset(this.appliedValue()) : null;
+  this.activePresetKey.set(detected);
 
-    // If empty + premium + initial preset provided => apply once.
-    const isEmpty = !this.value?.start && !this.value?.end;
-    if (this.isPremium && this.initialPreset && isEmpty) {
-      const r = calcPresetRange(this.initialPreset, this.today);
-      this.commitApplied(r, this.initialPreset);
-    } else {
-      this.activePresetKey.set(this.detectPreset(this.appliedValue()));
-    }
+  if (this.isPremium && detected && detected !== 'custom') {
+    this.appliedDisplayMode.set('preset');
+    this.appliedPresetKey.set(detected);
+  } else {
+    this.appliedDisplayMode.set('custom');
+    this.appliedPresetKey.set(null);
+  }
+}
+
 
     // Position initial calendars:
     const start = this.appliedValue().start;
@@ -232,9 +262,9 @@ export class DateRangePickerProto4Component {
   triggerLabel = computed(() => {
     const r = this.appliedValue();
     if (!r.start || !r.end) return '';
-    const presetKey = this.detectPreset(r);
-    if (this.isPremium && presetKey && presetKey !== 'custom') {
-      const p = this.presets.find((x) => x.key === presetKey);
+
+    if (this.isPremium && this.appliedDisplayMode() === 'preset' && this.appliedPresetKey()) {
+      const p = this.presets.find((x) => x.key === this.appliedPresetKey());
       return p?.label ?? this.formatRange(r);
     }
     return this.formatRange(r);
@@ -293,20 +323,42 @@ export class DateRangePickerProto4Component {
   }
 
   /** --- Presets (left panel) --- */
-  selectPreset(key: QuickKey) {
-    // Prototype 4 rule: selecting a preset DOES NOT close the panel.
-    // It sets the draft to that range and positions calendars at the start date.
-    const r = calcPresetRange(key, this.today);
-    this.draft.set(r);
+  selectPreset(key: ActivePreset) {
+  if (key === null) return;
+  // Prototype 4 rule: selecting a preset DOES NOT close the panel.
+  // It sets the draft to that range and positions calendars at the start date.
+  if (key === 'custom') {
+    const start = startOfMonth(this.today);
+    const end = this.today;
+    this.draft.set({ start, end });
     this.activeField.set('start');
     this.showError.set(false);
 
-    this.positionCalendarsAtStart(r.start!);
+    // Custom always resets to current-month-to-today.
+    this.draftMode.set('custom');
+    this.draftPresetKey.set(null);
+    this.activePresetKey.set('custom');
 
-    // We do NOT change applied until Apply dates.
-    // For highlight in the preset list, we can treat it as "draft preset".
-    this.activePresetKey.set(key);
+    this.positionCalendarsAtStart(start);
+    return;
   }
+
+  // Quick presets
+  const r = calcPresetRange(key, this.today);
+  this.draft.set(r);
+  this.activeField.set('start');
+  this.showError.set(false);
+
+  this.positionCalendarsAtStart(r.start!);
+
+  // Track as preset-origin draft (unless user later edits, then it becomes custom).
+  this.draftMode.set('preset');
+  this.draftPresetKey.set(key);
+
+  // For highlight in the preset list, we can treat it as "draft preset".
+  this.activePresetKey.set(key);
+}
+
 
   /** --- Inputs / focus --- */
   setActive(field: ActiveField) {
@@ -452,8 +504,12 @@ bottomYearsLimited = computed(() =>
     const n = normalizeDate(d);
     const r = this.draft();
 
-    // Clear preset highlight as soon as user starts manual edits (treat as custom).
-    if (this.isPremium) this.activePresetKey.set('custom');
+    // If user started from a preset and then edits manually => switch context to Custom (no reset).
+    if (this.isPremium && this.draftMode() === 'preset') {
+      this.activePresetKey.set('custom');
+      this.draftMode.set('custom');
+      this.draftPresetKey.set(null);
+    }
 
     // If draft is empty, set start.
     if (!r.start && !r.end) {
@@ -522,31 +578,54 @@ bottomYearsLimited = computed(() =>
   canApply = computed(() => !!this.draft().start && !!this.draft().end);
 
   apply() {
-    this.closePickers();
-    if (!this.canApply()) {
-      this.showError.set(true);
-      return;
-    }
-
-    const r = this.draft();
-    const preset = this.isPremium ? this.detectPreset(r) : null;
-
-    this.commitApplied(r as { start: Date; end: Date }, preset);
-    this.isOpen.set(false);
+  this.closePickers();
+  if (!this.canApply()) {
+    this.showError.set(true);
+    return;
   }
 
-  /** --- Utilities --- */
-  private commitApplied(r: { start: Date; end: Date }, preset: ActivePreset) {
-    const next: DateRange = { start: r.start, end: r.end };
-    this.appliedValue.set(next);
-    this.valueChange.emit(next);
+  const r = this.draft() as { start: Date; end: Date };
 
-    // Track active preset for label/highlight.
-    this.activePresetKey.set(preset);
-
-    // Reposition calendars to start date (per spec).
-    this.positionCalendarsAtStart(r.start);
+  // Apply semantics:
+  // - Only show preset label if user explicitly chose a preset and applied without edits.
+  // - Anything coming from Custom (or edited) is treated as Custom and displays a date range.
+  if (this.isPremium && this.draftMode() === 'preset' && this.draftPresetKey()) {
+    this.commitApplied(r, {
+      activePreset: this.draftPresetKey()!,
+      displayMode: 'preset',
+      presetKey: this.draftPresetKey()!,
+    });
+  } else {
+    this.commitApplied(r, {
+      activePreset: this.isPremium ? 'custom' : null,
+      displayMode: 'custom',
+      presetKey: null,
+    });
   }
+
+  this.isOpen.set(false);
+}
+
+/** --- Utilities --- */
+
+  private commitApplied(
+  r: { start: Date; end: Date },
+  meta: { activePreset: ActivePreset; displayMode: 'preset' | 'custom'; presetKey: QuickKey | null }
+) {
+  const next: DateRange = { start: r.start, end: r.end };
+  this.appliedValue.set(next);
+  this.valueChange.emit(next);
+
+  // Track active preset for highlight in the preset list (premium only).
+  this.activePresetKey.set(meta.activePreset);
+
+  // Track how the applied value should be displayed in the trigger.
+  this.appliedDisplayMode.set(meta.displayMode);
+  this.appliedPresetKey.set(meta.displayMode === 'preset' ? meta.presetKey : null);
+
+  // Reposition calendars to start date (per spec).
+  this.positionCalendarsAtStart(r.start);
+}
 
   private formatRange(r: DateRange): string {
     if (!r.start || !r.end) return '';
@@ -563,6 +642,7 @@ bottomYearsLimited = computed(() =>
 
     // Compare to each preset as of "today".
     for (const p of this.presets) {
+      if (p.key === 'custom') continue;
       const pr = calcPresetRange(p.key, this.today);
       if (isSameDay(pr.start!, r.start) && isSameDay(pr.end!, r.end)) return p.key;
     }
